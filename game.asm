@@ -8,29 +8,28 @@
 # Bitmap Display Configuration:
 # - Unit width in pixels: 8 (update this as needed)
 # - Unit height in pixels: 8 (update this as needed)
-# - Display width in pixels: 256 (update this as needed)
-# - Display height in pixels: 256 (update this as needed)
+# - Display width in pixels: 512 (update this as needed)
+# - Display height in pixels: 512 (update this as needed)
 # - Base Address for Display: 0x10008000 ($gp)
 #
 # Which milestones have been reached in this submission?
 # (See the assignment handout for descriptions of the milestones)
-# - Milestone 1/2/3/4 (choose the one the applies)
+# - Milestone 4 
 #
 # Which approved features have been implemented for milestone 4?
 # (See the assignment handout for the list of additional features)
-# 1. (fill in the feature, if any)
-# 2. (fill in the feature, if any)
-# 3. (fill in the feature, if any)
-# ... (add more if necessary)
+# 1. Smooth Graphics
+# 2. Increasing Difficulty
+# 3. Shoot Obstacles
 #
 # Link to video demonstration for final submission:
 # - (insert YouTube / MyMedia / other URL here). Make sure we can view it!
 #
 # Are you OK with us sharing the video with people outside course staff?
-# - yes / no / yes, and please share this project github link as well!
+# yes, and please share this project github link as well!
 #
 # Any additional information that the TA needs to know:
-# - (write here, if any)
+# Github Link: 
 #
 #####################################################################
 # Bitmap display starter code
@@ -38,42 +37,61 @@
 # Bitmap Display Configuration:
 # - Unit width in pixels: 8
 # - Unit height in pixels: 8
-# - Display width in pixels: 256
-# - Display height in pixels: 256
+# - Display width in pixels: 512
+# - Display height in pixels: 512
 # - Base Address for Display: 0x10008000 ($gp)
 #####################################################################
-# $t0 = base address of canvas
-# $t9, $t8, keyboard stuff
-# $t4, check keyboard input
+# $t0 = game timer
 # $t1, location of player
 
+# Game info
 .eqv BASE_ADDRESS 	0x10008000
 .eqv CANVAS_WIDTH 	64
 .eqv CANVAS_HEIGHT 	64
 .eqv REFRESH_RATE 	40 # in miliseconds
+.eqv RESPAWN_TIME	20
+.eqv LASER_CD 		300
+.eqv MAX_OBSTACLES	16
+.eqv ADD_ENEMY		175 # add enemy every 7 seconds
 
+# Colors
 .eqv PLAYER_BODY	0xffffff
 .eqv PLAYER_EYE		0x7e00ff
-
 .eqv BACKGROUND_COLOR	0xfcb945
-
 .eqv OBSTACLE_EAR	0x000000
 .eqv OBSTACLE_BODY	0xff6df3
 .eqv OBSTACLE_EYE	0xff0000
-
-.eqv NUM_OBSTACLES	5
-.eqv RESPAWN_TIME	20
-
 .eqv LIVES_COLOR	0xff0000
 
 .data
-Obstacles: .space 	20 # 5 obstacles
-Lives: .word 		3 # number of lives
+Obstacles: 		.space 	64 # Max 12 obstacles
+Lives: 			.word 	3  # Number of lives
+Num_Obstacles: 		.word	4  # Starting number of obstacles
+LaserReady: 		.word	1  # Check if laser is ready
+LaserCoolDownTimer: 	.word	0  # Timer for laser cooldown
 
 .text
-Begin:
+# draw title here!
+
+jal DrawCanvas
+
+Title_Loop:
+li $t9, 0xffff0000	# keyboard
+	lw $t8, 0($t9)
+	beq $t8, 1, Title_Loop_KeyPressed
+	Title_Loop_Sleep:
+		li $v0, 32		# sleeps before looping
+		li $a0, REFRESH_RATE
+		syscall
+		j Title_Loop
 	
-	li $t0, BASE_ADDRESS		# $t0 stores the base address for display
+	Title_Loop_KeyPressed:
+		lw $t4, 4($t9)
+		beq $t4, 112, pPressed
+		j Title_Loop
+
+Begin:
+	li $t0, 0
 	li $t5, BACKGROUND_COLOR	# $t3 stores the blue colour code
 	
 	# Calculates the beginning position of the player and stores it in $t1
@@ -93,7 +111,10 @@ Begin:
 	li $a1, CANVAS_WIDTH
 	subi $a1, $a1, 4
 	li $t4, 0
-	li $t5, NUM_OBSTACLES 		# number of obstacles
+	#la $t5, Num_Obstacles
+	#lw $t5, 0($t5)
+	li $t5, MAX_OBSTACLES
+	#li $t5, NUM_OBSTACLES 		# number of obstacles
 	la $t2, Obstacles 	# address of Obstacles array in $t2
 	InitObstacles_Loop:
 		bge $t4, $t5, InitObstacles_LoopEnd 	# Loops 5 times
@@ -115,8 +136,8 @@ DrawCanvas:
 	mult $t2,$t3 		# CANVAS_WIDTH * CANVAS_HEIGHT * 4
 	mflo $t3
 	
-	add $t2, $zero, $t0 	# t2 = address
-	add $t3, $t3, $t0 	# t3 = address + CANVAS_WIDTH * CANVAS_HEIGHT * 4
+	addi $t2, $zero, BASE_ADDRESS 	# t2 = address
+	addi $t3, $t3, BASE_ADDRESS 	# t3 = address + CANVAS_WIDTH * CANVAS_HEIGHT * 4
 	
 	DrawCanvas_Loop:	# Draws every pixel in the canvas
 		beq $t2, $t3, DrawCanvas_End
@@ -147,7 +168,7 @@ DrawPlayer:
 	DrawPlayer_Else:
 		mult $t4, $t3
 		mflo $t4 			# multiplies address by 4
-		add $t4, $t4, $t0		# start hardcoding pixels to draw
+		addi $t4, $t4, BASE_ADDRESS		# start hardcoding pixels to draw
 		addi $t4, $t4, 4
 		sw $t5, 0($t4) 
 		addi $t4, $t4, 4
@@ -163,7 +184,7 @@ DrawPlayer:
 	DrawPlayer_Else2:
 		mult $t4, $t3
 		mflo $t4 			# multiplies address by 4
-		add $t4, $t4, $t0		# start hardcoding pixels to draw
+		addi $t4, $t4, BASE_ADDRESS		# start hardcoding pixels to draw
 		addi $t4, $t4, 4
 		sw $t5, 0($t4)
 		addi $t4, $t4, 8
@@ -179,7 +200,7 @@ DrawPlayer:
 		subi $t4, $t4, 3 
 		mult $t4, $t3
 		mflo $t4 			# multiplies address by 4
-		add $t4, $t4, $t0		# start hardcoding pixels to draw
+		addi $t4, $t4, BASE_ADDRESS		# start hardcoding pixels to draw
 		addi $t4, $t4, 4
 		sw $t5, 0($t4)
 		addi $t4, $t4, 4
@@ -201,7 +222,7 @@ DrawPlayer:
 	DrawPlayer_Else3:
 		mult $t4, $t3
 		mflo $t4 			# multiplies address by 4
-		add $t4, $t4, $t0		# start hardcoding pixels to draw
+		addi $t4, $t4, BASE_ADDRESS		# start hardcoding pixels to draw
 		sw $t5, 0($t4)
 		addi $t4, $t4, 4
 		li $t5, PLAYER_EYE
@@ -225,7 +246,7 @@ DrawPlayer:
 	DrawPlayer_Else4:
 		mult $t4, $t3
 		mflo $t4 			# multiplies address by 4
-		add $t4, $t4, $t0		# start hardcoding pixels to draw
+		addi $t4, $t4, BASE_ADDRESS		# start hardcoding pixels to draw
 		sw $t5, 0($t4)
 		addi $t4, $t4, 4
 		sw $t5, 0($t4)
@@ -247,7 +268,7 @@ DrawLives:
 	li $t3, 4
 	mult $t2,$t3 			# CANVAS_WIDTH * CANVAS_HEIGHT - 2 * 4
 	mflo $t4
-	add $t4, $t4, $t0
+	addi $t4, $t4, BASE_ADDRESS
 	addi $t4,  $t4, 12  		# CANVAS_WIDTH * CANVAS_HEIGHT - 2 * 4 + 8
 
 	la $t2, Lives 			# address of lives array in $t2
@@ -332,7 +353,9 @@ DrawObstacles:
 	la $t2, Obstacles
 	li $t8, 0
 DrawObstacles_Loop:
-	li $t3 NUM_OBSTACLES 		# number of obstacles
+	la $t3, Num_Obstacles
+	lw $t3, 0($t3)
+	#li $t3 NUM_OBSTACLES 		# number of obstacles
 	bge $t8, $t3 DrawObstacles_LoopEnd
 	
 	li $t6, CANVAS_WIDTH
@@ -363,7 +386,7 @@ DrawObstacles_Loop:
 	DrawObstacles_Else0:
 		mult $t4, $t3
 		mflo $t4 			# multiplies address by 4
-		add $t4, $t4, $t0
+		addi $t4, $t4, BASE_ADDRESS
 		li $t5, BACKGROUND_COLOR
 		sw $t5, 0($t4) 
 		addi $t4, $t4, 16
@@ -383,7 +406,7 @@ DrawObstacles_Loop:
 	DrawObstacles_Else:
 		mult $t4, $t3
 		mflo $t4 			# multiplies address by 4
-		add $t4, $t4, $t0		# start hardcoding pixels to draw
+		addi $t4, $t4, BASE_ADDRESS		# start hardcoding pixels to draw
 		li $t5, OBSTACLE_EAR
 		sw $t5, 0($t4) 
 		addi $t4, $t4, 16
@@ -406,7 +429,7 @@ DrawObstacles_Loop:
 	DrawObstacles_Else2:
 		mult $t4, $t3
 		mflo $t4 			# multiplies address by 4
-		add $t4, $t4, $t0		# start hardcoding pixels to draw
+		addi $t4, $t4, BASE_ADDRESS		# start hardcoding pixels to draw
 		addi $t4, $t4, 4
 		sw $t5, 0($t4)
 		addi $t4, $t4, 8
@@ -423,7 +446,7 @@ DrawObstacles_Loop:
 		subi $t4, $t4, 3 	# location - 2
 		mult $t4, $t3
 		mflo $t4 		# multiplies address by 4
-		add $t4, $t4, $t0	
+		addi $t4, $t4, BASE_ADDRESS	
 		li $t5, BACKGROUND_COLOR
 		addi $t4, $t4, 4
 		sw $t5, 0($t4)
@@ -448,7 +471,7 @@ DrawObstacles_Loop:
 	DrawObstacles_Else3:
 		mult $t4, $t3
 		mflo $t4 		# multiplies address by 4
-		add $t4, $t4, $t0 	# start hardcoding pixels to draw
+		addi $t4, $t4, BASE_ADDRESS 	# start hardcoding pixels to draw
 		sw $t5, 0($t4)
 		addi $t4, $t4, 4
 		sw $t5, 0($t4)
@@ -469,7 +492,7 @@ DrawObstacles_Loop:
 		mult $t4, $t3
 		mflo $t4 		# multiplies address by 4
 		addi $t4, $t4, 4 	# start hardcoding pixels to draw
-		add $t4, $t4, $t0
+		addi $t4, $t4, BASE_ADDRESS
 		sw $t5, 0($t4)
 		addi $t4, $t4, 8
 		sw $t5, 0($t4)
@@ -480,11 +503,66 @@ DrawObstacles_Loop:
 	DrawObstacles_LoopEnd:
 		jr $ra
 
+DrawLaserIcon:
+	li $t2, CANVAS_WIDTH
+	li $t3, CANVAS_HEIGHT
+	subi $t3, $t3, 1
+	mult $t2, $t3
+	mflo $t2 # width * (height - 1) in $t2
+	li $t3, 4
+	mult $t2, $t3
+	mflo $t2 # 4 * width * (height - 1) in $t2
+	subi $t2, $t2, 8
+	addi $t2, $t2, BASE_ADDRESS
+	li $t5, PLAYER_EYE
+	sw $t5, 0($t2)
+	subi $t2, $t2, CANVAS_HEIGHT
+	subi $t2, $t2, CANVAS_HEIGHT
+	subi $t2, $t2, CANVAS_HEIGHT
+	subi $t2, $t2, CANVAS_HEIGHT
+	sw $t5, 0($t2)
+	subi $t2, $t2, CANVAS_HEIGHT
+	subi $t2, $t2, CANVAS_HEIGHT
+	subi $t2, $t2, CANVAS_HEIGHT
+	subi $t2, $t2, CANVAS_HEIGHT
+	sw $t5, 0($t2)
+	subi $t2, $t2, CANVAS_HEIGHT
+	subi $t2, $t2, CANVAS_HEIGHT
+	subi $t2, $t2, CANVAS_HEIGHT
+	subi $t2, $t2, CANVAS_HEIGHT
+	sw $t5, 0($t2)
+	subi $t2, $t2, CANVAS_HEIGHT
+	subi $t2, $t2, CANVAS_HEIGHT
+	subi $t2, $t2, CANVAS_HEIGHT
+	subi $t2, $t2, CANVAS_HEIGHT
+	sw $t5, 0($t2)
+	jr $ra
+
 MainLoop_Begin:
 	#jal DrawCanvas
 	jal DrawObstacles
 	#jal DrawPlayer
 	jal DrawLives
+	la $t3, LaserReady
+	lw $t3, 0($t3)
+	beqz $t3, DontDrawLaser
+	jal DrawLaserIcon
+	j DontDrawLaser_After
+	DontDrawLaser:
+		la $t3, LaserCoolDownTimer
+		lw $t4, 0($t3)
+		addi $t4, $t4, 1
+		sw $t4, 0($t3) # increment cooldown
+		li $t2, LASER_CD
+		beq $t4, $t2, SetLaser # check if cooldown is up
+		j DontDrawLaser_After
+		SetLaser:
+			li $t2, 0
+			sw $t2, 0($t3)
+			la $t3, LaserReady
+			li $t2, 1
+			sw $t2, 0($t3) # sets laser as ready
+	DontDrawLaser_After:
 	
 	# width * (height - 1) in t5
 	li $t3, CANVAS_WIDTH
@@ -500,7 +578,9 @@ MainLoop_Begin:
 	li $t3, CANVAS_WIDTH 	# increment obstacles by
 	la $t2, Obstacles 	# address of array
 	li $t7, 0
-	li $t8, NUM_OBSTACLES 	# number of obstacles to loop through
+	la $t8, Num_Obstacles
+	lw $t8, 0($t8)
+	#li $t8, NUM_OBSTACLES 	# number of obstacles to loop through
 	li $t9, -1
 	MainLoop_IncrementObstacleLoop:
 		bge $t7, $t8 MainLoop_IncrementObstacleLoopEnd
@@ -551,6 +631,26 @@ MainLoop_Begin:
 		li $v0, 32		# sleeps before looping
 		li $a0, REFRESH_RATE
 		syscall
+	
+	addi $t0, $t0, 1
+	li $t9, ADD_ENEMY # adds enemy every 7 seconds
+	div $t0, $t9
+	mfhi $t9 # game time % 250
+	
+	beq $t9, $zero Increment_NumEnemies
+	j MainLoop_Begin
+	
+	Increment_NumEnemies:
+		
+		la $t8 Num_Obstacles
+		lw $t7, 0($t8)
+		
+		li $t9, MAX_OBSTACLES
+		bge $t7, $t9 MainLoop_Begin # don't increment if there's MAX_OBSTACLES enemies
+		
+		addi $t7, $t7, 1
+		sw $t7, 0($t8)
+	
 	j MainLoop_Begin
 
 KeyPressed:
@@ -560,6 +660,7 @@ KeyPressed:
 	beq $t4, 115, sPressed
 	beq $t4, 100, dPressed
 	beq $t4, 112, pPressed
+	beq $t4, 32, spacePressed
 	j MainLoop_Sleep
 
 	aPressed:
@@ -621,6 +722,7 @@ KeyPressed:
 		subi $t6, $t6, CANVAS_WIDTH
 		subi $t6, $t6, CANVAS_WIDTH
 		sub $t1, $t1, $t6
+		
 		
 			li $t5, BACKGROUND_COLOR
 			li $t3, 4
@@ -741,23 +843,132 @@ KeyPressed:
 		dPressed_If:
 			subi $t2, $t2, 2
 			j MainLoop_Sleep
-	pPressed: # DEBUG
-		#jal CheckCollision_DecreaseLives
+	pPressed:
+		la $t3, LaserCoolDownTimer
+		li $t2, 0 # reset laser status
+		sw $t2, 0($t3)
+		la $t3, LaserReady
+		li $t2, 1
+		sw $t2, 0($t3)
+			
+		la $t8 Num_Obstacles # reset number of enemies
+		li $t9, 4
+		sw $t9, 0($t8)
+		li $t0, 0# reset game timer
+		
 		la $t7, Lives
 		li $t6, 3
 		sw $t6, 0($t7)
 		jal DrawCanvas
-		jal DrawObstacles #debug
-		jal DrawPlayer #debug
-		jal DrawLives #debug
+		#jal DrawObstacles #debug
+		#jal DrawPlayer #debug
+		#jal DrawLives #debug
 		li $v0, 32		# sleeps
 		li $a0, 1000
 		syscall
-		j End #debug
+		j Begin #debug
+		
+	spacePressed:
+	la $t2, LaserReady
+	lw $t2, 0($t2)
+	bnez $t2 LaserAvailable
+	j MainLoop_Sleep
+	LaserAvailable:	
+		la $t2, LaserReady
+		sw $zero, 0($t2)
+		
+		add $t2, $t1, $t1
+		add $t2, $t2, $t1
+		add $t2, $t2, $t1
+		addi $t2, $t2, BASE_ADDRESS # get current position of player
+		subi $t2, $t2, 4
+		subi $t2, $t2, CANVAS_WIDTH
+		subi $t2, $t2, CANVAS_WIDTH
+		subi $t2, $t2, CANVAS_WIDTH
+		subi $t2, $t2, CANVAS_WIDTH
+		subi $t2, $t2, CANVAS_WIDTH
+		subi $t2, $t2, CANVAS_WIDTH
+		subi $t2, $t2, CANVAS_WIDTH
+		subi $t2, $t2, CANVAS_WIDTH
+		subi $t2, $t2, CANVAS_WIDTH
+		subi $t2, $t2, CANVAS_WIDTH
+		subi $t2, $t2, CANVAS_WIDTH
+		subi $t2, $t2, CANVAS_WIDTH
+		
+		li $t3, PLAYER_EYE
+		li $v0, 32		# sleeps before looping
+		li $a0, 5
+		la $t6, Obstacles
+		
+		drawLaser:
+			blt $t2, BASE_ADDRESS, drawLaser_End
+			sw $t3, 0($t2)
+			addi $t2, $t2, 8
+			sw $t3, 0($t2)
+			subi $t2, $t2, 8
+			subi $t2, $t2, CANVAS_WIDTH
+			subi $t2, $t2, CANVAS_WIDTH
+			subi $t2, $t2, CANVAS_WIDTH
+			subi $t2, $t2, CANVAS_WIDTH
+
+			syscall
+			
+			j drawLaser
+			drawLaser_End:
+			li $a0, 250
+			syscall
+			
+			la $t2, Num_Obstacles
+			lw $t4, 0($t2) # get number of obstacl;es
+			li $t5, 0
+			
+				
+			kill_Obstacles:
+				bge $t5, $t4, kill_Obstacles_End
+				
+				lw $t2, 0($t6) # get array value
+				li $t7, CANVAS_WIDTH
+				div $t1, $t7 
+				mfhi $t8 # get x value of player
+				div $t2, $t7 
+				mfhi $t9 # get x value of obstacle
+				
+				
+				bge $t9, $t8 kill_ObstaclesAbsIf # if obstacle x is greater than player x
+				j kill_ObstaclesAbsElse
+				kill_ObstaclesAbsIf:	
+					sub $t9, $t9, $t8
+					j kill_ObstaclesAbsAfter
+				kill_ObstaclesAbsElse:
+					sub $t9, $t8, $t9 # x distance in $t9
+				kill_ObstaclesAbsAfter:
+				
+				
+				li $t7, 3 # branch if collision detected
+				ble $t9, $t7, kill_Obstacles_Collision
+				j kill_Obstacles_CollisionAfter
+				kill_Obstacles_Collision:
+					li $t7, -1
+					sw $t7, 0($t6)
+				kill_Obstacles_CollisionAfter:
+				addi $t5, $t5, 1
+				addi $t6, $t6, 4
+				j kill_Obstacles
+			kill_Obstacles_End:
+			
+			jal DrawCanvas
+			jal DrawObstacles
+			jal DrawPlayer
+			
+		
+		
+		j MainLoop_Sleep
 CheckCollision:
 	la $t2, Obstacles
 	li $t8, 0
-	li $t9, NUM_OBSTACLES
+	#li $t9, NUM_OBSTACLES
+	la $t9, Num_Obstacles
+	lw $t9, 0($t9)
 	CheckCollision_Loop:
 		bge $t8, $t9, CheckCollision_LoopEnd
 		
@@ -826,5 +1037,89 @@ CheckCollision:
 		jr $ra
 
 End:
+li $v0, 32		# sleeps
+li $a0, 30
+li $t5, 0x8994ff
+addi $t4, $zero, BASE_ADDRESS
+add $t6, $zero, $t4
+add $t6, $zero, $t4
+syscall
+syscall
+syscall
+syscall
+syscall
+syscall
+syscall
+syscall
+syscall
+syscall
+syscall
+addi $t3, $t4, 2856
+sw $t5, 0($t3)
+addi $t3, $t4, 2860
+sw $t5, 0($t3)
+addi $t3, $t4, 2864
+sw $t5, 0($t3)
+addi $t3, $t4, 2868
+sw $t5, 0($t3)
+addi $t3, $t4, 2872
+sw $t5, 0($t3)
+addi $t3, $t4, 2876
+sw $t5, 0($t3)
+syscall
+addi $t3, $t4, 3104
+sw $t5, 0($t3)
+addi $t3, $t4, 3108
+sw $t5, 0($t3)
+addi $t3, $t4, 3112
+sw $t5, 0($t3)
+addi $t3, $t4, 3116
+sw $t5, 0($t3)
+addi $t3, $t4, 3120
+sw $t5, 0($t3)
+addi $t3, $t4, 3124
+sw $t5, 0($t3)
+addi $t3, $t4, 3128
+sw $t5, 0($t3)
+addi $t3, $t4, 3132
+sw $t5, 0($t3)
+addi $t3, $t4, 3136
+sw $t5, 0($t3)
+syscall
+addi $t3, $t4, 3356
+sw $t5, 0($t3)
+addi $t3, $t4, 3360
+sw $t5, 0($t3)
+addi $t3, $t4, 3364
+sw $t5, 0($t3)
+addi $t3, $t4, 3368
+sw $t5, 0($t3)
+addi $t3, $t4, 3388
+sw $t5, 0($t3)
+addi $t3, $t4, 3392
+sw $t5, 0($t3)
+syscall
+addi $t3, $t4, 3612
+sw $t5, 0($t3)
+addi $t3, $t4, 3616
+sw $t5, 0($t3)
+addi $t3, $t4, 3620
+sw $t5, 0($t3)
+
+End_Loop:
+	li $t9, 0xffff0000	# keyboard
+	lw $t8, 0($t9)
+	beq $t8, 1, End_Loop_KeyPressed
+	End_Loop_Sleep:
+		li $v0, 32		# sleeps before looping
+		li $a0, REFRESH_RATE
+		syscall
+		j End_Loop
+	
+	End_Loop_KeyPressed:
+		lw $t4, 4($t9)
+		beq $t4, 112, pPressed
+		j End_Loop
+
 	li $v0, 10		# terminate the program gracefully
 	syscall
