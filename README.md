@@ -1,5 +1,5 @@
-![GoodThumbnail](https://user-images.githubusercontent.com/51217386/113720504-b505b400-96bc-11eb-8457-a40faf222c4e.png)
 <p align="center">
+  <img src="https://user-images.githubusercontent.com/51217386/113720504-b505b400-96bc-11eb-8457-a40faf222c4e.png"/>
   <a href="https://youtu.be/Jw_NSXn3UMI" target="_blank">YouTube Demo</a>
 </p>
 
