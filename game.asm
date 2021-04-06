@@ -17,21 +17,23 @@
 #
 # Which approved features have been implemented for milestone 4?
 # 1. Smooth Graphics
-# 2. Increasing Difficulty
-# 3. Shoot Obstacles
+# 2. Shoot Obstacles
+# 3. Increasing Difficulty
 #
 # Link to video demonstration for final submission:
-# - (insert YouTube / MyMedia / other URL here). Make sure we can view it!
+# https://youtu.be/Jw_NSXn3UMI
 #
 # Are you OK with us sharing the video with people outside course staff?
-# yes, and please share this project github link as well!
+# Yes, and please share this project github link as well!
 #
 # Any additional information that the TA needs to know:
-# Github Link: 
+# Github Link: https://github.com/Epicsteve2/CSCB58_Project
+#
+# Sources for title graphic:
+# https://www.pinterest.ca/pin/604608318705977451/
+# https://www.pinterest.ca/pin/608900812100977646/
 #
 #####################################################################
-# Bitmap display starter code
-#
 # Bitmap Display Configuration:
 # - Unit width in pixels: 8
 # - Unit height in pixels: 8
@@ -39,8 +41,6 @@
 # - Display height in pixels: 512
 # - Base Address for Display: 0x10008000 ($gp)
 #####################################################################
-# $t0 = game timer
-# $t1 = location of player
 
 # Game info
 .eqv BASE_ADDRESS 	0x10008000
@@ -69,6 +69,8 @@ LaserReady: 		.word	1  # Check if laser is ready
 LaserCoolDownTimer: 	.word	0  # Timer for laser cooldown
 
 .text
+TitleGraphic:
+# Starts drawing the title graphic
 li $v0, 32		# syscall for sleeping for 30 ms
 li $a0, 30
 addi $t4, $zero, BASE_ADDRESS
