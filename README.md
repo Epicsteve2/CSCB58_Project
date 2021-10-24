@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/51217386/113720504-b505b400-96bc-11eb-8457-a40faf222c4e.png"/>
+  <img src="src/thumbnail.png"/>
   <a href="https://youtu.be/Jw_NSXn3UMI" target="_blank">YouTube Demo</a>
 </p>
 
@@ -7,7 +7,7 @@
 Imperishable Dawn is a SHMUP (also known as Shoot 'em up) styled game built in MIPS assembly. 
 
 <p align="center">
-  <img src="https://cdn.discordapp.com/attachments/754698019823419462/828731538509922304/final.gif" height="400"/>
+  <img src="src/demo.gif" height="400"/>
 </p>
 
 The game features a `64 x 64` pixel display and uses the `Keyboard and Display MMIO Simulator` for input.\
@@ -34,7 +34,7 @@ java -jar 'mars.jar'
 ```
 
 ## Docker
-**Only works in Linux with X11 windowing system**
+**Only works in Linux with the X11 windowing system**
 ```bash
 make docker-run
 ```
