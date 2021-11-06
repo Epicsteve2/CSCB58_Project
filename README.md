@@ -37,7 +37,7 @@ java -jar 'mars.jar'
 **Only works in Linux with the X11 windowing system**
 ```bash
 # May need to run 
-# Not exactly sure hwat this does, but it's probably insecure LOL
+# Not exactly sure what this does, but it's probably insecure LOL
 xhost +
 
 make docker-run
