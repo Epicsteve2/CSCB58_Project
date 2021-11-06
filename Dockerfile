@@ -2,15 +2,12 @@
 FROM debian:bullseye-slim
 
 RUN apt-get update && \
-    apt-get install --yes --no-install-recommends \
-        openjdk-11-jre \
-        curl && \
+    apt-get install --yes --no-install-recommends openjdk-11-jre && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /imperishable-dawn/
-RUN curl --location "http://courses.missouristate.edu/KenVollmar/mars/MARS_4_5_Aug2014/Mars4_5.jar" \
-        --output mars.jar
+ADD "http://courses.missouristate.edu/KenVollmar/mars/MARS_4_5_Aug2014/Mars4_5.jar" mars.jar
 COPY game.asm .
 
 CMD ["java", "-jar", "mars.jar"]

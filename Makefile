@@ -2,7 +2,7 @@ IMAGE_NAME = mars
 
 .PHONY: docker-build 
 docker-build:
-	docker build --tag mars .
+	docker build --tag $(IMAGE_NAME) .
 
 .PHONY: docker-run 
 docker-run: | docker-build
